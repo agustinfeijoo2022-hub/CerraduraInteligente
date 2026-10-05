@@ -117,7 +117,7 @@ y `AUTH`. Cualquier otro es rechazado con `ERROR:COMANDO_DESCONOCIDO`.
 Cada login, selección de modo y comando ejecutado se registra en
 la colección `historial_accesos` con los campos:
 
-`{``json}
+`}``json'
 {
   "uid": "abc123...",
   "email": "usuario@ejemplo.com",
