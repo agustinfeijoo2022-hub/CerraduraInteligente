@@ -117,17 +117,15 @@ y `AUTH`. Cualquier otro es rechazado con `ERROR:COMANDO_DESCONOCIDO`.
 Cada login, selección de modo y comando ejecutado se registra en
 la colección `historial_accesos` con los campos:
 
-`}``json'
-{
-  "uid": "abc123...",
-  "email": "usuario@ejemplo.com",
-  "accion": "UNLOCK",
-  "rol": "CLIENTE",
-  "resultado": "OK",
-  "detalle": "Respuesta: OK:DESBLOQUEADO | IP: 192.168.0.103",
-  "fecha": "2026-10-05 21:15:32",
-  "timestamp": 1790626883722
-}
+-"uid": "abc123...",
+-"email": "usuario@ejemplo.com",
+-"accion": "UNLOCK",
+-"rol": "CLIENTE",
+-"resultado": "OK",
+-"detalle": "Respuesta: OK:DESBLOQUEADO | IP: 192.168.0.103",
+-"fecha": "2026-10-05 21:15:32",
+-"timestamp": 1790626883722
+
 
 Pantallas
 ModoSeleccionScreen
