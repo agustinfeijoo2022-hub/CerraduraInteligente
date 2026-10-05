@@ -1,21 +1,29 @@
 # Cerradura Inteligente IoT
 
-Aplicación Android desarrollada en Kotlin para controlar y monitorear una cerradura mediante comunicación WiFi entre dos dispositivos Android.
+Aplicación Android desarrollada en Kotlin para controlar y monitorear
+una cerradura mediante comunicación WiFi entre dos dispositivos
+Android, con seguridad basada en el estándar ISO 27400.
 
-El sistema utiliza un dispositivo como Cliente y otro como Servidor. El Cliente permite enviar comandos y consultar el estado de la cerradura, mientras que el Servidor recibe y procesa las solicitudes.
+---
 
 ## Descripción
 
-El proyecto corresponde a una solución IoT orientada al control remoto de una cerradura.
+El proyecto corresponde a una solución IoT orientada al control
+remoto de una cerradura. La comunicación entre dispositivos se
+realiza mediante sockets TCP sobre red WiFi. El acceso a la
+aplicación utiliza Firebase Authentication, el historial de accesos
+se almacena en Firebase Firestore, y la comunicación se protege
+con cifrado AES-128/GCM más un token de autenticación.
 
-La comunicación entre los dispositivos se realiza mediante sockets TCP sobre una red WiFi. Para el acceso a la aplicación se utiliza Firebase Authentication y para proteger la comunicación se implementa cifrado AES-128 junto con un token de sesión.
+El sistema permite:
 
-El sistema permite realizar las siguientes acciones:
-
-- Bloquear la cerradura.
-- Desbloquear la cerradura.
-- Consultar el estado de la cerradura.
+- Bloquear la cerradura (`LOCK`).
+- Desbloquear la cerradura (`UNLOCK`).
+- Consultar el estado de la cerradura (`STATUS`).
 - Mantener sincronizado el estado entre los dispositivos.
+- Registrar el historial de accesos en Firestore.
+
+---
 
 ## Tecnologías utilizadas
 
@@ -23,10 +31,13 @@ El sistema permite realizar las siguientes acciones:
 - Android Studio
 - Jetpack Compose
 - Firebase Authentication
+- Firebase Firestore
 - Navigation Compose
 - WiFi
 - TCP Sockets
-- AES-128
+- AES-128/GCM
+
+---
 
 ## Funcionamiento
 
@@ -34,147 +45,191 @@ El sistema utiliza dos dispositivos Android:
 
 ### Cliente
 
-El dispositivo Cliente es utilizado por el usuario para controlar la cerradura.
-
-Desde el Cliente se puede:
-
-- Iniciar sesión.
+- Iniciar sesión con Firebase Authentication.
 - Conectarse al Servidor mediante su dirección IP.
 - Consultar el estado de la cerradura.
 - Enviar comandos de bloqueo y desbloqueo.
 
 ### Servidor
 
-El dispositivo Servidor recibe las solicitudes enviadas por el Cliente.
-
-Sus principales funciones son:
-
-- Esperar conexiones TCP.
-- Recibir solicitudes.
-- Validar el token de sesión.
+- Esperar conexiones TCP en el puerto 8080.
+- Recibir solicitudes cifradas.
+- Validar el token de autenticación.
+- Validar el comando contra la lista blanca.
 - Procesar los comandos recibidos.
 - Actualizar el estado de la cerradura.
 - Responder al Cliente.
+- Registrar cada operación en Firestore.
+
+---
 
 ## Comunicación
 
 Los dos dispositivos deben estar conectados a la misma red WiFi.
+El Cliente necesita conocer la dirección IP del dispositivo que
+está funcionando como Servidor para establecer la conexión TCP.
 
-El Cliente necesita conocer la dirección IP del dispositivo que está funcionando como Servidor para establecer la conexión TCP.
+Esquema general:
+Cliente → [AES-128/GCM] → WiFi/TCP → Servidor
+Servidor → [AES-128/GCM] → WiFi/TCP → Cliente
 
-El funcionamiento general es:
 
-Cliente → WiFi → TCP → Servidor
+La dirección IP puede cambiar dependiendo de la red utilizada,
+por lo que debe revisarse antes de cada prueba.
 
-La dirección IP puede cambiar dependiendo de la red utilizada, por lo que debe revisarse antes de realizar una prueba.
+---
 
-## Seguridad
+## Seguridad (ISO 27400)
 
-El proyecto incorpora diferentes mecanismos para proteger el acceso y la comunicación.
+El proyecto implementa defensa en profundidad con cuatro capas:
 
-### Firebase Authentication
+### 1. Autenticación con Firebase
 
-Se utiliza Firebase Authentication para gestionar el registro e inicio de sesión de los usuarios.
+Registro e inicio de sesión mediante Firebase Authentication.
+Sin credenciales válidas, no hay acceso a la aplicación.
 
-### Token de sesión
+### 2. Token de autenticación
 
-Se utiliza un token de sesión para validar las comunicaciones entre Cliente y Servidor.
+Cada mensaje incluye un token compartido que el Servidor valida
+antes de ejecutar cualquier acción. Formato:
 
-### Cifrado AES-128
+TOKEN:COMANDO
+Ejemplo: CERRA-2026-IOT-ABC123:UNLOCK
 
-Los comandos enviados entre los dispositivos son protegidos mediante cifrado AES-128 antes de ser transmitidos.
 
-### Validación de comandos
+### 3. Lista blanca de comandos
 
-El Servidor valida las solicitudes recibidas antes de procesarlas.
+Solo se aceptan los comandos `LOCK`, `UNLOCK`, `STATUS`, `INFO`
+y `AUTH`. Cualquier otro es rechazado con `ERROR:COMANDO_DESCONOCIDO`.
 
-Los comandos utilizados son:
+### 4. Cifrado AES-128/GCM
 
-- `LOCK`
-- `UNLOCK`
-- `STATUS`
+- Modo GCM (Galois/Counter Mode): cifrado autenticado.
+- IV único de 12 bytes generado con `SecureRandom` por mensaje.
+- Tag de autenticación de 128 bits que detecta alteraciones.
+- Si el cifrado o descifrado falla, el mensaje se rechaza y NO
+  se envía sin protección.
 
-## Pantallas
+### Historial de accesos en Firestore
 
-La aplicación está organizada en las siguientes pantallas:
+Cada login, selección de modo y comando ejecutado se registra en
+la colección `historial_accesos` con los campos:
 
-### ModoSeleccionScreen
+```json
+{
+  "uid": "abc123...",
+  "email": "usuario@ejemplo.com",
+  "accion": "UNLOCK",
+  "rol": "CLIENTE",
+  "resultado": "OK",
+  "detalle": "Respuesta: OK:DESBLOQUEADO | IP: 192.168.0.103",
+  "fecha": "2026-10-05 21:15:32",
+  "timestamp": 1790626883722
+}
 
-Permite seleccionar si el dispositivo funcionará como Cliente o Servidor.
+Pantallas
+ModoSeleccionScreen
+Permite seleccionar si el dispositivo funcionará como Cliente
+o Servidor.
 
-### LoginScreen
+LoginScreen
+Permite iniciar sesión con una cuenta registrada.
 
-Permite iniciar sesión utilizando una cuenta registrada.
-
-### RegisterScreen
-
+RegisterScreen
 Permite registrar un nuevo usuario mediante Firebase Authentication.
 
-### MonitoreoScreen
+MonitoreoScreen
+Muestra el estado actual de la cerradura.
 
-Permite consultar el estado actual de la cerradura.
-
-### ControlScreen
-
+ControlScreen
 Permite enviar comandos para controlar la cerradura.
 
-### ServidorScreen
+ServidorScreen
+Gestiona la recepción y procesamiento de las solicitudes
+provenientes del Cliente.
 
-Gestiona la recepción y procesamiento de las solicitudes provenientes del Cliente.
+Flujo de uso
+Conectar ambos dispositivos a la misma red WiFi.
 
-## Flujo de uso
+Abrir la aplicación en el primer dispositivo.
 
-1. Conectar ambos dispositivos a la misma red WiFi.
-2. Abrir la aplicación en el primer dispositivo.
-3. Seleccionar el modo Servidor.
-4. Revisar la dirección IP del Servidor.
-5. Abrir la aplicación en el segundo dispositivo.
-6. Seleccionar el modo Cliente.
-7. Ingresar la dirección IP del Servidor.
-8. Iniciar sesión.
-9. Entrar a la sección de monitoreo.
-10. Acceder al panel de control.
-11. Enviar los comandos `LOCK`, `UNLOCK` o `STATUS`.
-12. Verificar la respuesta del Servidor.
+Seleccionar el modo Servidor.
 
-## Requisitos
+Revisar la dirección IP del Servidor.
 
-Para ejecutar el proyecto se necesita:
+Abrir la aplicación en el segundo dispositivo.
 
-- Android Studio.
-- Kotlin.
-- Dos dispositivos Android o un dispositivo y un emulador.
-- Ambos dispositivos conectados a la misma red WiFi.
-- Proyecto configurado con Firebase Authentication.
+Seleccionar el modo Cliente.
 
-## Ejecución
+Ingresar la dirección IP del Servidor.
 
-1. Clonar el repositorio.
-2. Abrir el proyecto en Android Studio.
-3. Esperar la sincronización de Gradle.
-4. Configurar Firebase.
-5. Ejecutar la aplicación en los dispositivos.
-6. Configurar un dispositivo como Servidor.
-7. Configurar el segundo dispositivo como Cliente.
-8. Utilizar la dirección IP del Servidor para establecer la conexión.
-9. Realizar las pruebas desde el panel de control.
+Iniciar sesión.
 
-## Estructura de la aplicación
+Entrar a la sección de monitoreo.
 
-```text
-CerraduraInteligente
-│
-├── MainActivity
-│
-├── ModoSeleccionScreen
-├── LoginScreen
-├── RegisterScreen
-├── MonitoreoScreen
-├── ControlScreen
-└── ServidorScreenara IoT
-- **Año:** 2026
+Acceder al panel de control.
+
+Enviar los comandos LOCK, UNLOCK o STATUS.
+
+Verificar la respuesta del Servidor.
+
+Requisitos
+Android Studio (versión reciente).
+
+Kotlin.
+
+Dos dispositivos Android o uno + emulador.
+
+Ambos dispositivos conectados a la misma red WiFi.
+
+Proyecto de Firebase configurado con Authentication y Firestore.
+
+Ejecución
+Clonar el repositorio:
+git clone https://github.com/agustinfeljoo/CerraduraInteligente.git
+Abrir el proyecto en Android Studio.
+
+Esperar la sincronización de Gradle.
+
+Verificar que google-services.json esté en la carpeta app/.
+
+Ejecutar la aplicación en los dispositivos.
+
+Configurar un dispositivo como Servidor.
+
+Configurar el segundo dispositivo como Cliente.
+
+Utilizar la dirección IP del Servidor para establecer la conexión.
+
+Realizar las pruebas desde el panel de control.
+Estructura del proyecto
+CerraduraInteligente/
+├── app/
+│   ├── google-services.json
+│   ├── build.gradle.kts
+│   └── src/main/
+│       ├── AndroidManifest.xml
+│       ├── java/com/example/cerradura/iot/
+│       │   ├── MainActivity.kt
+│       │   ├── ModoSeleccionScreen.kt
+│       │   ├── LoginScreen.kt
+│       │   ├── RegisterScreen.kt
+│       │   ├── MonitoreoScreen.kt
+│       │   ├── ControlScreen.kt
+│       │   ├── ServidorScreen.kt
+│       │   ├── Cifrado.kt
+│       │   ├── Seguridad.kt
+│       │   ├── WifiClient.kt
+│       │   ├── WifiServer.kt
+│       │   ├── ArduinoSimulator.kt
+│       │   └── HistorialDB.kt
+│       └── res/
+├── build.gradle.kts
+├── settings.gradle.kts
+├── gradle.properties
+└── README.md
+
 Autor
-
 Agustín Feljoo
 
 Asignatura: TI3042 — Aplicaciones Móviles para IoT
