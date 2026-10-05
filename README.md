@@ -134,6 +134,7 @@ la colección `historial_accesos` con los campos:
 -"timestamp": 1790626883722
 
 
+
 Pantallas
 ModoSeleccionScreen
 Permite seleccionar si el dispositivo funcionará como Cliente
