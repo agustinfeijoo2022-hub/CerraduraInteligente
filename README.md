@@ -4,8 +4,6 @@ Aplicación Android desarrollada en Kotlin para controlar y monitorear
 una cerradura mediante comunicación WiFi entre dos dispositivos
 Android, con seguridad basada en el estándar ISO 27400.
 
----
-
 ## Descripción
 
 El proyecto corresponde a una solución IoT orientada al control
@@ -23,8 +21,6 @@ El sistema permite:
 - Mantener sincronizado el estado entre los dispositivos.
 - Registrar el historial de accesos en Firestore.
 
----
-
 ## Tecnologías utilizadas
 
 - Kotlin
@@ -36,8 +32,6 @@ El sistema permite:
 - WiFi
 - TCP Sockets
 - AES-128/GCM
-
----
 
 ## Funcionamiento
 
@@ -61,8 +55,6 @@ El sistema utiliza dos dispositivos Android:
 - Responder al Cliente.
 - Registrar cada operación en Firestore.
 
----
-
 ## Comunicación
 
 Los dos dispositivos deben estar conectados a la misma red WiFi.
@@ -77,19 +69,14 @@ Servidor → [AES-128/GCM] → WiFi/TCP → Cliente
 La dirección IP puede cambiar dependiendo de la red utilizada,
 por lo que debe revisarse antes de cada prueba.
 
----
-
 ## Seguridad (ISO 27400)
-
 El proyecto implementa defensa en profundidad con cuatro capas:
 
 ### 1. Autenticación con Firebase
-
 Registro e inicio de sesión mediante Firebase Authentication.
 Sin credenciales válidas, no hay acceso a la aplicación.
 
 ### 2. Token de autenticación
-
 Cada mensaje incluye un token compartido que el Servidor valida
 antes de ejecutar cualquier acción. Formato:
 
@@ -98,12 +85,10 @@ Ejemplo: CERRA-2026-IOT-ABC123:UNLOCK
 
 
 ### 3. Lista blanca de comandos
-
 Solo se aceptan los comandos `LOCK`, `UNLOCK`, `STATUS`, `INFO`
 y `AUTH`. Cualquier otro es rechazado con `ERROR:COMANDO_DESCONOCIDO`.
 
 ### 4. Cifrado AES-128/GCM
-
 - Modo GCM (Galois/Counter Mode): cifrado autenticado.
 - IV único de 12 bytes generado con `SecureRandom` por mensaje.
 - Tag de autenticación de 128 bits que detecta alteraciones.
@@ -111,29 +96,17 @@ y `AUTH`. Cualquier otro es rechazado con `ERROR:COMANDO_DESCONOCIDO`.
   se envía sin protección.
 
 ### Historial de accesos en Firestore
-
-### Historial de accesos en Firestore
-
 Cada login, selección de modo y comando ejecutado se registra en
 la colección `historial_accesos` con los campos:
 
 -"uid": "abc123...",
-
 -"email": "usuario@ejemplo.com",
-
 -"accion": "UNLOCK",
-
 -"rol": "CLIENTE",
-
 -"resultado": "OK",
-
 -"detalle": "Respuesta: OK:DESBLOQUEADO | IP: 192.168.0.103",
-
 -"fecha": "2026-10-05 21:15:32",
-
 -"timestamp": 1790626883722
-
-
 
 Pantallas
 ModoSeleccionScreen
@@ -158,55 +131,36 @@ provenientes del Cliente.
 
 Flujo de uso
 Conectar ambos dispositivos a la misma red WiFi.
-
 Abrir la aplicación en el primer dispositivo.
 
 Seleccionar el modo Servidor.
-
 Revisar la dirección IP del Servidor.
-
 Abrir la aplicación en el segundo dispositivo.
 
 Seleccionar el modo Cliente.
-
 Ingresar la dirección IP del Servidor.
-
 Iniciar sesión.
-
 Entrar a la sección de monitoreo.
-
 Acceder al panel de control.
-
 Enviar los comandos LOCK, UNLOCK o STATUS.
-
 Verificar la respuesta del Servidor.
 
 Requisitos
 Android Studio (versión reciente).
-
 Kotlin.
-
 Dos dispositivos Android o uno + emulador.
-
 Ambos dispositivos conectados a la misma red WiFi.
-
 Proyecto de Firebase configurado con Authentication y Firestore.
 
 Ejecución
 Clonar el repositorio:
 git clone https://github.com/agustinfeljoo/CerraduraInteligente.git
 Abrir el proyecto en Android Studio.
-
 Esperar la sincronización de Gradle.
-
 Verificar que google-services.json esté en la carpeta app/.
-
 Ejecutar la aplicación en los dispositivos.
-
 Configurar un dispositivo como Servidor.
-
 Configurar el segundo dispositivo como Cliente.
-
 Utilizar la dirección IP del Servidor para establecer la conexión.
 
 Realizar las pruebas desde el panel de control.
