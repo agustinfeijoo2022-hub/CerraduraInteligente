@@ -158,6 +158,13 @@ fun LoginScreen(
                                 .addOnCompleteListener { task ->
                                     isLoading = false
                                     if (task.isSuccessful) {
+                                        // ✅ Registrar login exitoso en el historial
+                                        HistorialDB.registrarAccion(
+                                            accion = "LOGIN",
+                                            rol = "DESCONOCIDO",
+                                            resultado = "OK",
+                                            detalle = "Inicio de sesión exitoso"
+                                        )
                                         onLoginSuccess()
                                     } else {
                                         errorMessage = task.exception?.message ?: "Error al iniciar sesión"

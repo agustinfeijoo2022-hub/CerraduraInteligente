@@ -1,5 +1,6 @@
 package com.example.cerradura.iot
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -10,6 +11,7 @@ import java.net.Socket
 
 object WifiClient {
 
+    private const val TAG = "WifiClient"
     private const val PUERTO = 8080
     private const val TIMEOUT_MS = 5000
 
@@ -28,22 +30,35 @@ object WifiClient {
 
             // ===== 1. CONSTRUIR MENSAJE SEGURO (TOKEN:COMANDO) =====
             val mensajeSeguro = Seguridad.construirMensaje(comando.uppercase())
-            println("Enviando: $mensajeSeguro")
+            Log.d(TAG, "Enviando: $mensajeSeguro")
 
-            // ===== 2. CIFRAR =====
-            val mensajeCifrado = Cifrado.cifrar(mensajeSeguro)
+            // ===== 2. CIFRAR (puede fallar → NO se envía nada) =====
+            val mensajeCifrado = try {
+                Cifrado.cifrar(mensajeSeguro)
+            } catch (e: SecurityException) {
+                Log.e(TAG, "No se pudo cifrar el mensaje: ${e.message}")
+                conectado = false
+                return@withContext "ERROR:CIFRADO_FALLIDO"
+            }
             salida.println(mensajeCifrado)
 
             // ===== 3. RECIBIR RESPUESTA CIFRADA =====
             val respuestaCifrada = entrada.readLine() ?: "ERROR:SIN_RESPUESTA"
 
-            // ===== 4. DESCIFRAR RESPUESTA =====
-            val respuesta = Cifrado.descifrar(respuestaCifrada)
+            // ===== 4. DESCIFRAR RESPUESTA (puede fallar → respuesta inválida) =====
+            val respuesta = try {
+                Cifrado.descifrar(respuestaCifrada)
+            } catch (e: SecurityException) {
+                Log.e(TAG, "Respuesta rechazada: ${e.message}")
+                conectado = false
+                return@withContext "ERROR:RESPUESTA_INVALIDA"
+            }
 
             conectado = true
             respuesta
         } catch (e: Exception) {
             conectado = false
+            Log.e(TAG, "Fallo de conexión: ${e.message}")
             "ERROR:${e.message ?: "FALLO_CONEXION"}"
         } finally {
             try {

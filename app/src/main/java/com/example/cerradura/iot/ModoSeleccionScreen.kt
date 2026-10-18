@@ -108,6 +108,13 @@ fun ModoSeleccionScreen(
                     Button(
                         onClick = {
                             WifiClient.ipServidor = ipServidor
+                            // ✅ Registrar selección de modo Cliente
+                            HistorialDB.registrarAccion(
+                                accion = "MODO_SELECCIONADO",
+                                rol = "CLIENTE",
+                                resultado = "OK",
+                                detalle = "IP del servidor: $ipServidor"
+                            )
                             onModoCliente(ipServidor)
                         },
                         modifier = Modifier
@@ -162,7 +169,16 @@ fun ModoSeleccionScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = onModoServidor,
+                        onClick = {
+                            // ✅ Registrar selección de modo Servidor
+                            HistorialDB.registrarAccion(
+                                accion = "MODO_SELECCIONADO",
+                                rol = "SERVIDOR",
+                                resultado = "OK",
+                                detalle = "Servidor iniciado"
+                            )
+                            onModoServidor()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),

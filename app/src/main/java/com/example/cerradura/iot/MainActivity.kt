@@ -25,17 +25,8 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onModoServidor = {
-                                    navController.navigate("servidor") {
+                                    navController.navigate("login_servidor") {
                                         popUpTo("modo") { inclusive = true }
-                                    }
-                                }
-                            )
-                        }
-                        composable("servidor") {
-                            ServidorScreen(
-                                onBack = {
-                                    navController.navigate("modo") {
-                                        popUpTo("servidor") { inclusive = true }
                                     }
                                 }
                             )
@@ -43,8 +34,20 @@ class MainActivity : ComponentActivity() {
                         composable("login") {
                             LoginScreen(
                                 onLoginSuccess = {
-                                    navController.navigate("monitoreo") {
+                                    navController.navigate("pin") {
                                         popUpTo("login") { inclusive = true }
+                                    }
+                                },
+                                onGoToRegister = {
+                                    navController.navigate("register")
+                                }
+                            )
+                        }
+                        composable("login_servidor") {
+                            LoginScreen(
+                                onLoginSuccess = {
+                                    navController.navigate("servidor") {
+                                        popUpTo("login_servidor") { inclusive = true }
                                     }
                                 },
                                 onGoToRegister = {
@@ -55,12 +58,21 @@ class MainActivity : ComponentActivity() {
                         composable("register") {
                             RegisterScreen(
                                 onRegisterSuccess = {
-                                    navController.navigate("login") {
+                                    navController.navigate("modo") {
                                         popUpTo("register") { inclusive = true }
                                     }
                                 },
                                 onGoToLogin = {
                                     navController.popBackStack()
+                                }
+                            )
+                        }
+                        composable("pin") {
+                            PinScreen(
+                                onPinCorrecto = {
+                                    navController.navigate("monitoreo") {
+                                        popUpTo("pin") { inclusive = true }
+                                    }
                                 }
                             )
                         }
@@ -75,6 +87,15 @@ class MainActivity : ComponentActivity() {
                             ControlScreen(
                                 onBack = {
                                     navController.popBackStack()
+                                }
+                            )
+                        }
+                        composable("servidor") {
+                            ServidorScreen(
+                                onBack = {
+                                    navController.navigate("modo") {
+                                        popUpTo("servidor") { inclusive = true }
+                                    }
                                 }
                             )
                         }

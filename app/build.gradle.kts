@@ -69,6 +69,7 @@ dependencies {
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation("com.google.firebase:firebase-firestore-ktx")
 
     // Navigation + ViewModel
     implementation(libs.navigation.compose)

@@ -34,7 +34,7 @@ fun ControlScreen(onBack: () -> Unit) {
     var mensaje by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Sincroniza el estado con el servidor cada 2 segundos
+    // Sincroniza el estado con el servidor cada 10 segundos
     LaunchedEffect(Unit) {
         while (true) {
             val resp = WifiClient.enviarComando("STATUS")
@@ -44,7 +44,7 @@ fun ControlScreen(onBack: () -> Unit) {
                     estadoCerradura = estadoReal
                 }
             }
-            delay(2000)
+            delay(10000)
         }
     }
 
@@ -146,6 +146,14 @@ fun ControlScreen(onBack: () -> Unit) {
                                 val respuesta = WifiClient.enviarComando(comando)
                                 mensaje = "Comando: $respuesta"
 
+                                // ✅ Registrar el comando en el historial
+                                HistorialDB.registrarAccion(
+                                    accion = comando,
+                                    rol = "CLIENTE",
+                                    resultado = if (respuesta.startsWith("OK:")) "OK" else "ERROR",
+                                    detalle = "Respuesta: $respuesta | IP servidor: ${WifiClient.ipServidor}"
+                                )
+
                                 // 2. Consultar el estado real al servidor
                                 val estadoRespuesta = WifiClient.enviarComando("STATUS")
                                 if (estadoRespuesta.startsWith("STATUS:")) {
@@ -172,6 +180,15 @@ fun ControlScreen(onBack: () -> Unit) {
                                     delay((tiempo * 1000).toLong())
 
                                     val respLock = WifiClient.enviarComando("LOCK")
+
+                                    // ✅ Registrar el auto-bloqueo
+                                    HistorialDB.registrarAccion(
+                                        accion = "AUTO_LOCK",
+                                        rol = "CLIENTE",
+                                        resultado = if (respLock.startsWith("OK:")) "OK" else "ERROR",
+                                        detalle = "Auto-bloqueo después de ${tiempoTexto}s"
+                                    )
+
                                     mensaje = "🔒 Cerrado automáticamente ($respLock)"
                                     estadoCerradura = "BLOQUEADO"
                                 }

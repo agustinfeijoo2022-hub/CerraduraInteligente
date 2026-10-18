@@ -1,5 +1,6 @@
 package com.example.cerradura.iot
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -10,6 +11,7 @@ import java.net.Socket
 
 object WifiServer {
 
+    private const val TAG = "WifiServer"
     private const val PUERTO = 8080
     private var serverSocket: ServerSocket? = null
     private var activo = false
@@ -25,7 +27,7 @@ object WifiServer {
         return@withContext try {
             serverSocket = ServerSocket(PUERTO)
             activo = true
-            println("Servidor iniciado en puerto $PUERTO")
+            Log.d(TAG, "Servidor iniciado en puerto $PUERTO")
 
             while (activo) {
                 val cliente = serverSocket?.accept() ?: break
@@ -55,13 +57,24 @@ object WifiServer {
             var linea: String?
             while (entrada.readLine().also { linea = it } != null) {
                 val mensajeCifrado = linea!!.trim()
-                println("Mensaje cifrado recibido de $ipCliente: $mensajeCifrado")
+                Log.d(TAG, "Mensaje cifrado recibido de $ipCliente")
 
-                // ===== 1. DESCIFRAR =====
-                val mensajeDescifrado = Cifrado.descifrar(mensajeCifrado)
-                println("Mensaje descifrado: $mensajeDescifrado")
+                val mensajeDescifrado = try {
+                    Cifrado.descifrar(mensajeCifrado)
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "Mensaje rechazado de $ipCliente: ${e.message}")
+                    val respuestaError = "ERROR:DESCIFRADO_FALLIDO"
+                    val respuestaErrorCifrada = try {
+                        Cifrado.cifrar(respuestaError)
+                    } catch (ex: SecurityException) {
+                        null
+                    }
+                    if (respuestaErrorCifrada != null) {
+                        salida.println(respuestaErrorCifrada)
+                    }
+                    continue
+                }
 
-                // ===== 2. PARSEAR TOKEN + COMANDO =====
                 val partes = Seguridad.parsearMensaje(mensajeDescifrado)
 
                 val respuesta: String = if (partes == null) {
@@ -69,16 +82,11 @@ object WifiServer {
                 } else {
                     val (token, comando) = partes
 
-                    // ===== 3. VALIDAR TOKEN =====
                     if (!Seguridad.tokenValido(token)) {
                         "ERROR:TOKEN_INVALIDO"
-                    }
-                    // ===== 4. VALIDAR COMANDO =====
-                    else if (!Seguridad.comandoValido(comando)) {
+                    } else if (!Seguridad.comandoValido(comando)) {
                         "ERROR:COMANDO_DESCONOCIDO"
-                    }
-                    // ===== 5. EJECUTAR COMANDO =====
-                    else {
+                    } else {
                         when (comando.uppercase()) {
                             "UNLOCK" -> {
                                 ArduinoSimulator.estado = "DESBLOQUEADO"
@@ -96,15 +104,18 @@ object WifiServer {
                     }
                 }
 
-                // ===== 6. REGISTRAR EN EL LOG (sin repetir) =====
                 if (!comando_es_status_o_repetido(respuesta)) {
                     onComandoRecibido?.invoke(
                         "$ipCliente → ${if (partes != null) partes.second else "?"} → $respuesta"
                     )
                 }
 
-                // ===== 7. ENVIAR RESPUESTA CIFRADA =====
-                val respuestaCifrada = Cifrado.cifrar(respuesta)
+                val respuestaCifrada = try {
+                    Cifrado.cifrar(respuesta)
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "No se pudo cifrar la respuesta: ${e.message}")
+                    continue
+                }
                 salida.println(respuestaCifrada)
             }
             cliente.close()
@@ -113,15 +124,10 @@ object WifiServer {
         }
     }
 
-    /**
-     * Devuelve true si la respuesta corresponde a un STATUS o a un comando repetido.
-     */
     private fun comando_es_status_o_repetido(respuesta: String): Boolean {
-        // No registrar STATUS
         if (respuesta.startsWith("STATUS:") || respuesta.startsWith("OK:AUTENTICADO")) {
             return true
         }
-        // No registrar repetidos en menos de 1 segundo
         val ahora = System.currentTimeMillis()
         val esRepetido = (respuesta == ultimoComando) &&
                 (ahora - ultimoComandoTime < 1000)
